@@ -94,7 +94,7 @@ class ASTAnalyzer:
 
             self._python_language = Language(tspython.language())
             self._parser = Parser(self._python_language)
-        except (ImportError, Exception) as exc:
+        except (ImportError, OSError, TypeError) as exc:
             logger.warning("tree-sitter unavailable, falling back to regex analysis: %s", exc)
             self._parser = None
 

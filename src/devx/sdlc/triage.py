@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from devx.core.config import LLMConfig
 from devx.core.llm_client import LLMClient
@@ -200,13 +201,20 @@ class IssueTriage:
                 reasoning="Failed to validate LLM response values",
             )
 
+    @staticmethod
+    def _keyword_match(keyword: str, text: str) -> bool:
+        """Match keyword using word boundaries to avoid false positives."""
+        if " " in keyword:
+            return keyword in text
+        return bool(re.search(rf"\b{re.escape(keyword)}\b", text))
+
     def _triage_with_heuristics(
         self,
         *,
         title: str,
         description: str,
     ) -> TriageResult:
-        """Triage using keyword matching."""
+        """Triage using keyword matching with word boundaries."""
         combined = f"{title} {description}".lower()
         reasons: list[str] = []
 
@@ -214,26 +222,36 @@ class IssueTriage:
         priority = IssuePriority.P3  # default
         priority_order = list(IssuePriority)
         for keyword, p in _URGENCY_KEYWORDS.items():
-            if keyword in combined and priority_order.index(p) < priority_order.index(priority):
+            if not self._keyword_match(keyword, combined):
+                continue
+            if priority_order.index(p) < priority_order.index(priority):
                 priority = p
                 reasons.append(f"Keyword '{keyword}' suggests {p.value}")
 
         # Find highest severity keyword match
         severity = Severity.MEDIUM  # default
+        severity_order = list(Severity)
         for keyword, s in _SEVERITY_KEYWORDS.items():
-            if keyword in combined and list(Severity).index(s) < list(Severity).index(severity):
+            if not self._keyword_match(keyword, combined):
+                continue
+            if severity_order.index(s) < severity_order.index(severity):
                 severity = s
                 reasons.append(f"Keyword '{keyword}' suggests {s.value}")
 
         # Generate labels
         labels: list[str] = []
-        if "bug" in combined or "error" in combined or "crash" in combined:
+        bug_match = (
+            self._keyword_match("bug", combined)
+            or self._keyword_match("error", combined)
+            or self._keyword_match("crash", combined)
+        )
+        if bug_match:
             labels.append("bug")
-        if "feature" in combined or "request" in combined:
+        if self._keyword_match("feature", combined) or self._keyword_match("request", combined):
             labels.append("enhancement")
-        if "question" in combined or "how to" in combined:
+        if self._keyword_match("question", combined) or "how to" in combined:
             labels.append("question")
-        if "security" in combined:
+        if self._keyword_match("security", combined):
             labels.append("security")
 
         if not reasons:

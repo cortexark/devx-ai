@@ -148,27 +148,31 @@ class MetricsCollector:
         repo: str,
         deployment: dict[str, Any],
     ) -> float | None:
-        """Calculate lead time from first commit to deployment.
+        """Calculate lead time from commit creation to deployment.
 
-        Lead time = deployment time - first commit time in the deployment ref.
-        This is a simplified calculation; a production system would trace
-        the full commit graph.
+        Lead time = deployment time - commit author timestamp.
+        Uses the deployment SHA to fetch the commit's author date,
+        giving the time between code being written and deployed.
         """
         deployed_at = self._parse_datetime(deployment.get("created_at", ""))
         if not deployed_at:
             return None
 
-        # Use the deployment's created_at vs the ref's first commit
-        # Simplified: we approximate using the deployment creation time
-        # A full implementation would resolve the SHA to its first commit
         sha = deployment.get("sha", "")
         if not sha:
             return None
 
         try:
-            # Approximate lead time from the time between ref creation and deploy
-            # In practice, you'd compare against the commit timestamp
-            return None  # Return None when we can't accurately calculate
+            response = await gh._request("GET", f"/repos/{repo}/commits/{sha}")
+            commit_data = response.json()
+            author_date_str = (
+                commit_data.get("commit", {}).get("author", {}).get("date", "")
+            )
+            committed_at = self._parse_datetime(author_date_str)
+            if not committed_at:
+                return None
+            lead_time = (deployed_at - committed_at).total_seconds()
+            return max(lead_time, 0.0)
         except Exception:
             logger.debug("Could not calculate lead time for deployment %s", deployment.get("id"))
             return None

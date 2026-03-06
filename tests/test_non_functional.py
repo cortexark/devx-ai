@@ -1020,15 +1020,16 @@ class TestDashboardEdgeCases:
 class TestTemplateEdgeCases:
     """TestTemplate and TestTemplateRegistry edge cases."""
 
-    def test_render_missing_placeholder_raises(self):
+    def test_render_missing_placeholder_preserved(self):
         template = TestTemplate(
             name="test",
             category="unit",
             description="d",
-            template="def test_{func_name}(): {missing_key}\n",
+            template="def test_${func_name}(): ${missing_key}\n",
         )
-        with pytest.raises(KeyError):
-            template.render({"func_name": "foo"})
+        rendered = template.render({"func_name": "foo"})
+        assert "test_foo" in rendered
+        assert "${missing_key}" in rendered
 
     def test_get_templates_nonexistent_category(self):
         registry = TestTemplateRegistry()
