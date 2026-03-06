@@ -23,6 +23,7 @@ from devx.core.llm_client import LLMResponse
 from devx.core.models import (
     DeploymentRecord,
     ReviewFinding,
+    ReviewResult,
     Severity,
 )
 from devx.metrics.analyzer import DORAAnalyzer
@@ -118,15 +119,19 @@ index abc1234..def5678 100644
 
         # Step 3: Format as GitHub comment
         formatter = SuggestionFormatter()
-        if findings:
-            comment = formatter.to_github_comment(findings)
-            assert isinstance(comment, str)
-            assert len(comment) > 0
+        review_result = ReviewResult(
+            findings=findings,
+            files_analyzed=1,
+            duration_seconds=0.1,
+        )
+        comment = formatter.to_github_comment(review_result)
+        assert isinstance(comment, str)
+        assert len(comment) > 0
 
-            # Also test JSON output
-            json_output = formatter.to_json(findings)
-            parsed = json.loads(json_output)
-            assert isinstance(parsed, list)
+        # Also test JSON output
+        json_output = formatter.to_json(review_result)
+        assert isinstance(json_output, dict)
+        assert "findings" in json_output
 
     @pytest.mark.asyncio
     async def test_full_pr_review_with_llm_augmentation(self) -> None:
