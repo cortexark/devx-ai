@@ -94,7 +94,7 @@ index abc1234..def5678 100644
 
         assert len(files) == 1
         assert files[0].path == "src/auth.py"
-        assert files[0].additions > 0
+        assert len(files[0].hunks) > 0
 
         # Step 2: Analyze with AST
         analyzer = ASTAnalyzer()
@@ -152,14 +152,14 @@ index abc1234..def5678 100644
         )
 
         agent = ReviewAgent()
-        agent._llm_client = MagicMock()
-        agent._llm_client.complete = AsyncMock(return_value=mock_response)
+        agent._llm = MagicMock()
+        agent._llm.complete = AsyncMock(return_value=mock_response)
 
         result = await agent.review_diff(self.SAMPLE_DIFF)
 
         # Should have findings from both AST and LLM
         assert len(result.findings) >= 0  # May or may not have AST findings for this code
-        assert result.files_reviewed >= 1
+        assert result.files_analyzed >= 1
 
     def test_empty_pr_produces_clean_review(self) -> None:
         """Empty or trivial PRs should produce clean results."""
@@ -253,7 +253,7 @@ async def fetch_exchange_rate(currency: str, base: str = "USD") -> Optional[floa
     def test_extract_signatures_from_source(self) -> None:
         """Extract all function signatures with type hints and docstrings."""
         extractor = SignatureExtractor()
-        signatures = extractor.extract(self.SAMPLE_SOURCE)
+        signatures = extractor.extract_from_source(self.SAMPLE_SOURCE)
 
         assert len(signatures) == 3
 
@@ -275,7 +275,7 @@ async def fetch_exchange_rate(currency: str, base: str = "USD") -> Optional[floa
     async def test_generate_tests_from_templates(self) -> None:
         """Generate test cases using template registry (no LLM needed)."""
         extractor = SignatureExtractor()
-        _signatures = extractor.extract(self.SAMPLE_SOURCE)
+        _signatures = extractor.extract_from_source(self.SAMPLE_SOURCE)
 
         generator = TestGenerator()  # Template-based, no API key
 
@@ -424,31 +424,33 @@ class TestIssueTriagePipeline:
         """Security vulnerability should get high priority."""
         triage = IssueTriage()
 
-        result = await triage.classify(
+        result = await triage.triage(
             title="SQL injection vulnerability in login endpoint",
-            body="The login form is vulnerable to SQL injection. "
-            "Attacker can bypass authentication by entering ' OR '1'='1 as password.",
+            description=(
+                "The login form is vulnerable to SQL injection. Attacker can bypass authentication."
+            ),
         )
 
         assert result.priority is not None
         assert result.severity is not None
         # Security issues should get high priority
-        assert result.priority in ("P0", "P1")
+        assert result.priority.value in ("P0", "P1")
 
     @pytest.mark.asyncio
     async def test_minor_ui_bug_triage(self) -> None:
         """Minor UI bug should get lower priority."""
         triage = IssueTriage()
 
-        result = await triage.classify(
+        result = await triage.triage(
             title="Button alignment off by 2px on mobile",
-            body="On iPhone 14, the submit button is slightly misaligned. "
-            "Cosmetic issue only, functionality works fine.",
+            description=(
+                "On iPhone 14, the submit button is slightly misaligned. Cosmetic issue only."
+            ),
         )
 
         assert result.priority is not None
         # UI cosmetic issues should be lower priority
-        assert result.priority in ("P2", "P3")
+        assert result.priority.value in ("P2", "P3")
 
 
 # ===========================================================================
@@ -603,7 +605,7 @@ def fibonacci(n: int) -> int:
 '''
 
         extractor = SignatureExtractor()
-        signatures = extractor.extract(source_code)
+        signatures = extractor.extract_from_source(source_code)
         assert len(signatures) == 1
         assert signatures[0].name == "fibonacci"
         assert signatures[0].return_type is not None
