@@ -182,7 +182,10 @@ class ReviewAgent:
             )
             return self._parse_llm_findings(response.content)
         except Exception:
-            logger.exception("LLM review failed, continuing with AST-only results")
+            files = [fd.path for fd in file_diffs if not fd.is_deleted]
+            logger.exception(
+                "LLM review failed for files %s, continuing with AST-only results", files
+            )
             return []
 
     def _build_diff_context(self, file_diffs: list[FileDiff]) -> str:

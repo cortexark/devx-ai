@@ -137,7 +137,7 @@ class TestTestTemplateRegistry:
             name="test_render",
             category="unit",
             description="Test rendering",
-            template="def test_{func_name}(): assert {func_name}() == {expected}\n",
+            template="def test_${func_name}(): assert ${func_name}() == ${expected}\n",
         )
         rendered = template.render({"func_name": "add", "expected": "5"})
         assert "test_add" in rendered

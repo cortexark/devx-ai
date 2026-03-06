@@ -233,8 +233,8 @@ class TestGenerator:
                 )
             )
 
-            # Type check test (if return type is annotated)
-            if sig.return_type:
+            # Type check test (if return type is annotated and is a simple type)
+            if sig.return_type and self._is_simple_type(sig.return_type):
                 test_cases.append(
                     TestCase(
                         name=f"test_{sig.name}_returns_correct_type",
@@ -250,9 +250,19 @@ class TestGenerator:
                     )
                 )
 
-            # Edge case: test with no args if function has optional params
+            # Edge case: test with only required args if function has optional params
             has_defaults = any("default" in p for p in sig.parameters)
             if has_defaults and sig.parameters:
+                required_args = ", ".join(
+                    self._default_value_for_param(p)
+                    for p in sig.parameters
+                    if "default" not in p and not p.get("name", "").startswith("*")
+                )
+                defaults_call = (
+                    f"await {sig.name}({required_args})"
+                    if sig.is_async
+                    else f"{sig.name}({required_args})"
+                )
                 test_cases.append(
                     TestCase(
                         name=f"test_{sig.name}_with_defaults",
@@ -261,7 +271,7 @@ class TestGenerator:
                             f"def test_{sig.name}_with_defaults():\n"
                             f'    """Test {sig.name} with default parameter values."""\n'
                             f"    # Call with only required parameters\n"
-                            f"    result = {sig.name}()\n"
+                            f"    result = {defaults_call}\n"
                             f"    assert result is not None\n"
                         ),
                         target_function=sig.name,
@@ -270,6 +280,12 @@ class TestGenerator:
                 )
 
         return test_cases
+
+    @staticmethod
+    def _is_simple_type(return_type: str) -> bool:
+        """Check if a return type is a simple builtin usable with isinstance."""
+        simple_types = {"str", "int", "float", "bool", "list", "dict", "set", "tuple", "bytes"}
+        return return_type in simple_types
 
     @staticmethod
     def _default_value_for_param(param: dict[str, Any]) -> str:

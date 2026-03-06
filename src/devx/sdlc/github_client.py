@@ -43,6 +43,7 @@ class GitHubClient:
     def __init__(self, config: GitHubConfig | None = None) -> None:
         self._config = config or GitHubConfig()
         self._client: httpx.AsyncClient | None = None
+        self._last_rate_info: RateLimitInfo | None = None
 
     async def __aenter__(self) -> GitHubClient:
         self._client = httpx.AsyncClient(
@@ -94,20 +95,22 @@ class GitHubClient:
         """
         client = self._ensure_client()
 
+        # Check rate limit from previous response before making a new request
+        if self._last_rate_info and self._last_rate_info.remaining < self._config.rate_limit_buffer:
+            wait_seconds = max(self._last_rate_info.reset_timestamp - self._current_timestamp(), 1)
+            logger.warning(
+                "Rate limit low (%d remaining). Waiting %ds before request.",
+                self._last_rate_info.remaining,
+                wait_seconds,
+            )
+            await asyncio.sleep(min(wait_seconds, 60))  # Cap wait at 60s
+
         response = await client.request(
             method, path, json=json, params=params, headers=headers or {}
         )
 
-        # Check rate limit
-        rate_info = self._parse_rate_limit(response)
-        if rate_info and rate_info.remaining < self._config.rate_limit_buffer:
-            wait_seconds = max(rate_info.reset_timestamp - self._current_timestamp(), 1)
-            logger.warning(
-                "Rate limit low (%d remaining). Waiting %ds.",
-                rate_info.remaining,
-                wait_seconds,
-            )
-            await asyncio.sleep(min(wait_seconds, 60))  # Cap wait at 60s
+        # Track rate limit for next request
+        self._last_rate_info = self._parse_rate_limit(response)
 
         response.raise_for_status()
         return response
