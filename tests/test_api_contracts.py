@@ -502,32 +502,22 @@ class TestDeploymentRecordContracts:
 
     def test_requires_id(self):
         with pytest.raises(ValidationError):
-            DeploymentRecord(
-                repo="org/app", sha="abc", deployed_at=datetime.now(tz=UTC)
-            )
+            DeploymentRecord(repo="org/app", sha="abc", deployed_at=datetime.now(tz=UTC))
 
     def test_requires_repo(self):
         with pytest.raises(ValidationError):
-            DeploymentRecord(
-                id="d1", sha="abc", deployed_at=datetime.now(tz=UTC)
-            )
+            DeploymentRecord(id="d1", sha="abc", deployed_at=datetime.now(tz=UTC))
 
     def test_default_status(self):
-        dep = DeploymentRecord(
-            id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC)
-        )
+        dep = DeploymentRecord(id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC))
         assert dep.status == "success"
 
     def test_default_environment(self):
-        dep = DeploymentRecord(
-            id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC)
-        )
+        dep = DeploymentRecord(id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC))
         assert dep.environment == "production"
 
     def test_lead_time_optional(self):
-        dep = DeploymentRecord(
-            id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC)
-        )
+        dep = DeploymentRecord(id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC))
         assert dep.lead_time_seconds is None
 
 
@@ -993,12 +983,16 @@ class TestDORAAnalyzerContracts:
         analyzer = DORAAnalyzer()
         teams = {
             "a": DORAMetrics(
-                deployment_frequency=1.0, lead_time_seconds=3600,
-                change_failure_rate=0.1, mttr_seconds=1800,
+                deployment_frequency=1.0,
+                lead_time_seconds=3600,
+                change_failure_rate=0.1,
+                mttr_seconds=1800,
             ),
             "b": DORAMetrics(
-                deployment_frequency=2.0, lead_time_seconds=1800,
-                change_failure_rate=0.05, mttr_seconds=900,
+                deployment_frequency=2.0,
+                lead_time_seconds=1800,
+                change_failure_rate=0.05,
+                mttr_seconds=900,
             ),
         }
         result = analyzer.team_comparison(teams)
@@ -1037,9 +1031,7 @@ class TestDashboardModelContracts:
         store1 = MetricsStore()
         store2 = MetricsStore()
         store1.add_deployment(
-            DeploymentRecord(
-                id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC)
-            )
+            DeploymentRecord(id="d1", repo="r", sha="a", deployed_at=datetime.now(tz=UTC))
         )
         assert len(store1.get_deployments()) == 1
         assert len(store2.get_deployments()) == 0

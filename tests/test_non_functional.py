@@ -166,15 +166,11 @@ class TestASTAnalyzerErrorHandling:
 
     def test_class_with_many_methods_finding(self):
         """Class with >20 methods triggers a finding."""
-        methods = "\n".join(
-            f"    def method_{i}(self):\n        pass\n" for i in range(25)
-        )
+        methods = "\n".join(f"    def method_{i}(self):\n        pass\n" for i in range(25))
         source = f'class BigClass:\n    """Big class."""\n{methods}\n'
         analyzer = ASTAnalyzer()
         result = analyzer.analyze_python(source, "big.py")
-        method_findings = [
-            f for f in result.findings if "too many methods" in f.title.lower()
-        ]
+        method_findings = [f for f in result.findings if "too many methods" in f.title.lower()]
         assert len(method_findings) >= 1
 
 
@@ -214,17 +210,23 @@ class TestReviewAgentLLMGarbage:
     async def test_llm_returns_array_with_bad_items(self, sample_diff):
         config = LLMConfig(api_key="test")
         agent = ReviewAgent(llm_config=config, enable_llm=True)
-        bad_data = json.dumps([
-            {"title": "Good finding", "description": "d", "severity": "high",
-             "category": "bug", "file": "f.py", "start_line": 1},
-            {"invalid": "item"},
-            "not a dict",
-            42,
-        ])
-        agent._llm = AsyncMock()
-        agent._llm.complete = AsyncMock(
-            return_value=LLMResponse(content=bad_data, model="gpt-4o")
+        bad_data = json.dumps(
+            [
+                {
+                    "title": "Good finding",
+                    "description": "d",
+                    "severity": "high",
+                    "category": "bug",
+                    "file": "f.py",
+                    "start_line": 1,
+                },
+                {"invalid": "item"},
+                "not a dict",
+                42,
+            ]
         )
+        agent._llm = AsyncMock()
+        agent._llm.complete = AsyncMock(return_value=LLMResponse(content=bad_data, model="gpt-4o"))
         result = await agent.review_diff(sample_diff)
         assert isinstance(result, ReviewResult)
 
@@ -232,24 +234,36 @@ class TestReviewAgentLLMGarbage:
         config = LLMConfig(api_key="test")
         agent = ReviewAgent(llm_config=config, enable_llm=True)
         findings = [
-            {"title": "Bug", "description": "d", "severity": "medium",
-             "category": "bug", "file": "f.py", "start_line": 1},
+            {
+                "title": "Bug",
+                "description": "d",
+                "severity": "medium",
+                "category": "bug",
+                "file": "f.py",
+                "start_line": 1,
+            },
         ]
         fenced = f"```json\n{json.dumps(findings)}\n```"
         agent._llm = AsyncMock()
-        agent._llm.complete = AsyncMock(
-            return_value=LLMResponse(content=fenced, model="gpt-4o")
-        )
+        agent._llm.complete = AsyncMock(return_value=LLMResponse(content=fenced, model="gpt-4o"))
         result = await agent.review_diff(sample_diff)
         assert isinstance(result, ReviewResult)
 
     async def test_llm_returns_invalid_severity(self, sample_diff):
         config = LLMConfig(api_key="test")
         agent = ReviewAgent(llm_config=config, enable_llm=True)
-        bad_findings = json.dumps([
-            {"title": "t", "description": "d", "severity": "INVALID",
-             "category": "bug", "file": "f.py", "start_line": 1},
-        ])
+        bad_findings = json.dumps(
+            [
+                {
+                    "title": "t",
+                    "description": "d",
+                    "severity": "INVALID",
+                    "category": "bug",
+                    "file": "f.py",
+                    "start_line": 1,
+                },
+            ]
+        )
         agent._llm = AsyncMock()
         agent._llm.complete = AsyncMock(
             return_value=LLMResponse(content=bad_findings, model="gpt-4o")
@@ -262,9 +276,7 @@ class TestReviewAgentLLMGarbage:
         config = LLMConfig(api_key="test")
         agent = ReviewAgent(llm_config=config, enable_llm=True)
         agent._llm = AsyncMock()
-        agent._llm.complete = AsyncMock(
-            return_value=LLMResponse(content="", model="gpt-4o")
-        )
+        agent._llm.complete = AsyncMock(return_value=LLMResponse(content="", model="gpt-4o"))
         result = await agent.review_diff(sample_diff)
         assert isinstance(result, ReviewResult)
 
@@ -294,14 +306,14 @@ class TestTestGeneratorLLMGarbage:
     async def test_llm_returns_bad_test_structure(self, sample_python_source):
         config = LLMConfig(api_key="test")
         gen = TestGenerator(llm_config=config)
-        bad_tests = json.dumps([
-            {"name": "test_x", "code": "", "target_function": "f"},  # empty code
-            {"no_name": True},  # missing required fields
-        ])
-        gen._llm = AsyncMock()
-        gen._llm.complete = AsyncMock(
-            return_value=LLMResponse(content=bad_tests, model="gpt-4o")
+        bad_tests = json.dumps(
+            [
+                {"name": "test_x", "code": "", "target_function": "f"},  # empty code
+                {"no_name": True},  # missing required fields
+            ]
         )
+        gen._llm = AsyncMock()
+        gen._llm.complete = AsyncMock(return_value=LLMResponse(content=bad_tests, model="gpt-4o"))
         suite = await gen.generate_for_source(sample_python_source, module="m")
         # Empty code tests should be filtered out
         assert isinstance(suite, TestSuite)
@@ -346,11 +358,13 @@ class TestPRLabelerFallbackLogic:
     async def test_llm_returns_unknown_labels(self):
         config = LLMConfig(api_key="test")
         labeler = PRLabeler(llm_config=config)
-        response_data = json.dumps({
-            "labels": ["nonexistent-label", "bug-fix", "another-fake"],
-            "confidence": 0.7,
-            "reasoning": "test",
-        })
+        response_data = json.dumps(
+            {
+                "labels": ["nonexistent-label", "bug-fix", "another-fake"],
+                "confidence": 0.7,
+                "reasoning": "test",
+            }
+        )
         labeler._llm = AsyncMock()
         labeler._llm.complete = AsyncMock(
             return_value=LLMResponse(content=response_data, model="gpt-4o")
@@ -401,12 +415,14 @@ class TestIssueTriageFallbackLogic:
     async def test_llm_returns_invalid_priority_value(self):
         config = LLMConfig(api_key="test")
         triage = IssueTriage(llm_config=config)
-        bad_response = json.dumps({
-            "priority": "P99",
-            "severity": "extreme",
-            "labels": [],
-            "reasoning": "bad data",
-        })
+        bad_response = json.dumps(
+            {
+                "priority": "P99",
+                "severity": "extreme",
+                "labels": [],
+                "reasoning": "bad data",
+            }
+        )
         triage._llm = AsyncMock()
         triage._llm.complete = AsyncMock(
             return_value=LLMResponse(content=bad_response, model="gpt-4o")
@@ -429,9 +445,7 @@ class TestIssueTriageFallbackLogic:
         }
         fenced = f"```json\n{json.dumps(response_data)}\n```"
         triage._llm = AsyncMock()
-        triage._llm.complete = AsyncMock(
-            return_value=LLMResponse(content=fenced, model="gpt-4o")
-        )
+        triage._llm.complete = AsyncMock(return_value=LLMResponse(content=fenced, model="gpt-4o"))
 
         result = await triage.triage(title="Critical bug")
         assert result.priority == IssuePriority.P1
@@ -527,10 +541,7 @@ class TestConfigurationEdgeCases:
 
     def test_settings_from_yaml_with_nested_config(self, tmp_path):
         config_path = tmp_path / "devx.yaml"
-        config_path.write_text(
-            "log_level: WARNING\n"
-            "debug: true\n"
-        )
+        config_path.write_text("log_level: WARNING\ndebug: true\n")
         settings = Settings.from_yaml(config_path)
         assert settings.log_level == "WARNING"
         assert settings.debug is True
@@ -623,8 +634,7 @@ class TestConcurrency:
     async def test_pr_labeler_concurrent_classifications(self):
         labeler = PRLabeler()
         tasks = [
-            labeler.classify(title=f"Fix bug #{i}", changed_files=["src/app.py"])
-            for i in range(5)
+            labeler.classify(title=f"Fix bug #{i}", changed_files=["src/app.py"]) for i in range(5)
         ]
         results = await asyncio.gather(*tasks)
         assert len(results) == 5
@@ -633,10 +643,7 @@ class TestConcurrency:
 
     async def test_issue_triage_concurrent_triages(self):
         triage = IssueTriage()
-        tasks = [
-            triage.triage(title=f"Issue #{i}: something broken")
-            for i in range(5)
-        ]
+        tasks = [triage.triage(title=f"Issue #{i}: something broken") for i in range(5)]
         results = await asyncio.gather(*tasks)
         assert len(results) == 5
         for r in results:
@@ -644,10 +651,7 @@ class TestConcurrency:
 
     async def test_test_generator_concurrent_generation(self, sample_python_source):
         gen = TestGenerator()
-        tasks = [
-            gen.generate_for_source(sample_python_source, module="m")
-            for _ in range(3)
-        ]
+        tasks = [gen.generate_for_source(sample_python_source, module="m") for _ in range(3)]
         results = await asyncio.gather(*tasks)
         assert len(results) == 3
         for r in results:
@@ -742,28 +746,36 @@ class TestReviewAgentParsing:
 
     def test_parse_finding_missing_start_line(self):
         agent = ReviewAgent(enable_llm=False)
-        data = json.dumps([{
-            "title": "Bug",
-            "description": "d",
-            "severity": "high",
-            "category": "bug",
-            "file": "f.py",
-            # missing start_line - should default to 1
-        }])
+        data = json.dumps(
+            [
+                {
+                    "title": "Bug",
+                    "description": "d",
+                    "severity": "high",
+                    "category": "bug",
+                    "file": "f.py",
+                    # missing start_line - should default to 1
+                }
+            ]
+        )
         result = agent._parse_llm_findings(data)
         assert len(result) == 1
         assert result[0].location.start_line == 1
 
     def test_parse_strips_markdown_fences(self):
         agent = ReviewAgent(enable_llm=False)
-        inner = json.dumps([{
-            "title": "Bug",
-            "description": "d",
-            "severity": "high",
-            "category": "bug",
-            "file": "f.py",
-            "start_line": 5,
-        }])
+        inner = json.dumps(
+            [
+                {
+                    "title": "Bug",
+                    "description": "d",
+                    "severity": "high",
+                    "category": "bug",
+                    "file": "f.py",
+                    "start_line": 5,
+                }
+            ]
+        )
         fenced = f"```json\n{inner}\n```"
         result = agent._parse_llm_findings(fenced)
         assert len(result) == 1
@@ -944,6 +956,7 @@ class TestDashboardEdgeCases:
     @pytest.fixture
     def client(self):
         from fastapi.testclient import TestClient
+
         return TestClient(app)
 
     @pytest.fixture(autouse=True)
@@ -1020,8 +1033,10 @@ class TestTemplateEdgeCases:
 
     def test_render_missing_placeholder_raises(self):
         template = TestTemplate(
-            name="test", category="unit",
-            description="d", template="def test_{func_name}(): {missing_key}\n",
+            name="test",
+            category="unit",
+            description="d",
+            template="def test_{func_name}(): {missing_key}\n",
         )
         with pytest.raises(KeyError):
             template.render({"func_name": "foo"})
@@ -1079,9 +1094,7 @@ class TestTestGeneratorDefaultValues:
         assert result == '"test_value"'
 
     def test_param_with_default(self):
-        result = TestGenerator._default_value_for_param(
-            {"name": "x", "default": "42"}
-        )
+        result = TestGenerator._default_value_for_param({"name": "x", "default": "42"})
         assert result == "42"
 
     def test_star_arg_returns_empty(self):
@@ -1119,7 +1132,9 @@ class TestMetricsStoreEdgeCases:
         for i in range(10):
             store.add_deployment(
                 DeploymentRecord(
-                    id=f"d{i}", repo="r", sha="a",
+                    id=f"d{i}",
+                    repo="r",
+                    sha="a",
                     deployed_at=now - timedelta(hours=i),
                 )
             )
@@ -1129,12 +1144,8 @@ class TestMetricsStoreEdgeCases:
     def test_get_deployments_repo_filter(self):
         store = MetricsStore()
         now = datetime.now(tz=UTC)
-        store.add_deployment(
-            DeploymentRecord(id="d1", repo="org/a", sha="x", deployed_at=now)
-        )
-        store.add_deployment(
-            DeploymentRecord(id="d2", repo="org/b", sha="y", deployed_at=now)
-        )
+        store.add_deployment(DeploymentRecord(id="d1", repo="org/a", sha="x", deployed_at=now))
+        store.add_deployment(DeploymentRecord(id="d2", repo="org/b", sha="y", deployed_at=now))
         result = store.get_deployments(repo="org/a")
         assert len(result) == 1
         assert result[0].repo == "org/a"
@@ -1145,21 +1156,23 @@ class TestMetricsStoreEdgeCases:
         store.add_deployment(
             DeploymentRecord(id="old", repo="r", sha="a", deployed_at=now - timedelta(days=5))
         )
-        store.add_deployment(
-            DeploymentRecord(id="new", repo="r", sha="b", deployed_at=now)
-        )
+        store.add_deployment(DeploymentRecord(id="new", repo="r", sha="b", deployed_at=now))
         result = store.get_deployments()
         assert result[0].id == "new"
 
     def test_multiple_dora_snapshots_returns_latest(self):
         store = MetricsStore()
         m1 = DORAMetrics(
-            deployment_frequency=1.0, lead_time_seconds=3600,
-            change_failure_rate=0.1, mttr_seconds=1800,
+            deployment_frequency=1.0,
+            lead_time_seconds=3600,
+            change_failure_rate=0.1,
+            mttr_seconds=1800,
         )
         m2 = DORAMetrics(
-            deployment_frequency=5.0, lead_time_seconds=1800,
-            change_failure_rate=0.02, mttr_seconds=600,
+            deployment_frequency=5.0,
+            lead_time_seconds=1800,
+            change_failure_rate=0.02,
+            mttr_seconds=600,
         )
         store.add_dora_snapshot(m1)
         store.add_dora_snapshot(m2)

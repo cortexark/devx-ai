@@ -57,9 +57,7 @@ class TestSignatureExtractor:
         extractor = SignatureExtractor()
         sigs = extractor.extract_from_source(sample_python_source, module="utils")
         fetch_sig = next(s for s in sigs if s.name == "fetch_data")
-        timeout_param = next(
-            p for p in fetch_sig.parameters if p["name"] == "timeout"
-        )
+        timeout_param = next(p for p in fetch_sig.parameters if p["name"] == "timeout")
         assert timeout_param["default"] == "30"
 
     def test_skip_private_functions(self):
@@ -96,9 +94,7 @@ def _private_func():
 
     def test_extract_module_name(self, sample_python_source):
         extractor = SignatureExtractor()
-        sigs = extractor.extract_from_source(
-            sample_python_source, module="mypackage.utils"
-        )
+        sigs = extractor.extract_from_source(sample_python_source, module="mypackage.utils")
         assert all(s.module == "mypackage.utils" for s in sigs)
 
 
@@ -164,9 +160,7 @@ class TestTestGenerator:
     @pytest.mark.asyncio
     async def test_generate_from_templates(self, sample_python_source):
         generator = TestGenerator()  # No LLM
-        suite = await generator.generate_for_source(
-            sample_python_source, module="utils"
-        )
+        suite = await generator.generate_for_source(sample_python_source, module="utils")
         assert isinstance(suite, TestSuite)
         assert len(suite.test_cases) >= 3  # At least one per function
         assert suite.framework == "pytest"
@@ -174,9 +168,7 @@ class TestTestGenerator:
     @pytest.mark.asyncio
     async def test_generate_includes_imports(self, sample_python_source):
         generator = TestGenerator()
-        suite = await generator.generate_for_source(
-            sample_python_source, module="utils"
-        )
+        suite = await generator.generate_for_source(sample_python_source, module="utils")
         assert any("import pytest" in imp for imp in suite.imports)
         assert any("from utils import" in imp for imp in suite.imports)
 
@@ -195,17 +187,13 @@ class TestTestGenerator:
         assert suite.test_cases == []
 
     @pytest.mark.asyncio
-    async def test_generate_with_mock_llm(
-        self, sample_python_source, mock_testgen_llm_response
-    ):
+    async def test_generate_with_mock_llm(self, sample_python_source, mock_testgen_llm_response):
         config = LLMConfig(api_key="test")
         generator = TestGenerator(llm_config=config)
         generator._llm = AsyncMock()
         generator._llm.complete = AsyncMock(return_value=mock_testgen_llm_response)
 
-        suite = await generator.generate_for_source(
-            sample_python_source, module="utils"
-        )
+        suite = await generator.generate_for_source(sample_python_source, module="utils")
         assert len(suite.test_cases) >= 1
 
     @pytest.mark.asyncio
@@ -231,9 +219,7 @@ class TestTestGenerator:
         generator._llm.complete = AsyncMock(side_effect=RuntimeError("API error"))
 
         # Should fall back to templates
-        suite = await generator.generate_for_source(
-            sample_python_source, module="utils"
-        )
+        suite = await generator.generate_for_source(sample_python_source, module="utils")
         assert len(suite.test_cases) >= 1  # Template-based fallback
 
     @pytest.mark.asyncio

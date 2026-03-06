@@ -157,9 +157,7 @@ class ReviewAgent:
                 continue
 
             # Reconstruct added content from hunks for analysis
-            added_code = "\n".join(
-                line for hunk in fd.hunks for line in hunk.added_lines
-            )
+            added_code = "\n".join(line for hunk in fd.hunks for line in hunk.added_lines)
             if added_code.strip():
                 result = self._analyzer.analyze_python(added_code, path)
                 findings.extend(result.findings)

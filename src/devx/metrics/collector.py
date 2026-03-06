@@ -61,9 +61,7 @@ class MetricsCollector:
         cutoff = datetime.now(tz=UTC) - timedelta(days=window)
 
         async with GitHubClient(self._github_config) as gh:
-            raw_deployments = await gh.list_deployments(
-                repo, environment=environment
-            )
+            raw_deployments = await gh.list_deployments(repo, environment=environment)
 
             records: list[DeploymentRecord] = []
             for dep in raw_deployments:
@@ -130,17 +128,17 @@ class MetricsCollector:
                 else:
                     cycle_time = None
 
-                pr_metrics.append({
-                    "number": issue["number"],
-                    "title": issue.get("title", ""),
-                    "created_at": issue.get("created_at"),
-                    "closed_at": issue.get("closed_at"),
-                    "cycle_time_seconds": cycle_time,
-                    "labels": [
-                        lbl.get("name", "") for lbl in issue.get("labels", [])
-                    ],
-                    "author": issue.get("user", {}).get("login", ""),
-                })
+                pr_metrics.append(
+                    {
+                        "number": issue["number"],
+                        "title": issue.get("title", ""),
+                        "created_at": issue.get("created_at"),
+                        "closed_at": issue.get("closed_at"),
+                        "cycle_time_seconds": cycle_time,
+                        "labels": [lbl.get("name", "") for lbl in issue.get("labels", [])],
+                        "author": issue.get("user", {}).get("login", ""),
+                    }
+                )
 
             return pr_metrics
 

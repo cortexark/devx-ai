@@ -213,58 +213,61 @@ class TestGenerator:
 
         for sig in signatures:
             # Basic unit test
-            call_args = ", ".join(
-                self._default_value_for_param(p) for p in sig.parameters
-            )
+            call_args = ", ".join(self._default_value_for_param(p) for p in sig.parameters)
             call_expr = (
-                f"await {sig.name}({call_args})" if sig.is_async
-                else f"{sig.name}({call_args})"
+                f"await {sig.name}({call_args})" if sig.is_async else f"{sig.name}({call_args})"
             )
 
-            test_cases.append(TestCase(
-                name=f"test_{sig.name}_returns_expected_result",
-                description=f"Test that {sig.name} returns a valid result",
-                code=(
-                    f"def test_{sig.name}_returns_expected_result():\n"
-                    f'    """Test that {sig.name} returns a valid result."""\n'
-                    f"    result = {call_expr}\n"
-                    f"    assert result is not None\n"
-                ),
-                target_function=sig.name,
-                category="unit",
-            ))
-
-            # Type check test (if return type is annotated)
-            if sig.return_type:
-                test_cases.append(TestCase(
-                    name=f"test_{sig.name}_returns_correct_type",
-                    description=f"Test that {sig.name} returns {sig.return_type}",
+            test_cases.append(
+                TestCase(
+                    name=f"test_{sig.name}_returns_expected_result",
+                    description=f"Test that {sig.name} returns a valid result",
                     code=(
-                        f"def test_{sig.name}_returns_correct_type():\n"
-                        f'    """Test that {sig.name} returns {sig.return_type}."""\n'
+                        f"def test_{sig.name}_returns_expected_result():\n"
+                        f'    """Test that {sig.name} returns a valid result."""\n'
                         f"    result = {call_expr}\n"
-                        f"    assert isinstance(result, {sig.return_type})\n"
+                        f"    assert result is not None\n"
                     ),
                     target_function=sig.name,
                     category="unit",
-                ))
+                )
+            )
+
+            # Type check test (if return type is annotated)
+            if sig.return_type:
+                test_cases.append(
+                    TestCase(
+                        name=f"test_{sig.name}_returns_correct_type",
+                        description=f"Test that {sig.name} returns {sig.return_type}",
+                        code=(
+                            f"def test_{sig.name}_returns_correct_type():\n"
+                            f'    """Test that {sig.name} returns {sig.return_type}."""\n'
+                            f"    result = {call_expr}\n"
+                            f"    assert isinstance(result, {sig.return_type})\n"
+                        ),
+                        target_function=sig.name,
+                        category="unit",
+                    )
+                )
 
             # Edge case: test with no args if function has optional params
             has_defaults = any("default" in p for p in sig.parameters)
             if has_defaults and sig.parameters:
-                test_cases.append(TestCase(
-                    name=f"test_{sig.name}_with_defaults",
-                    description=f"Test that {sig.name} works with default parameters",
-                    code=(
-                        f"def test_{sig.name}_with_defaults():\n"
-                        f'    """Test {sig.name} with default parameter values."""\n'
-                        f"    # Call with only required parameters\n"
-                        f"    result = {sig.name}()\n"
-                        f"    assert result is not None\n"
-                    ),
-                    target_function=sig.name,
-                    category="edge_case",
-                ))
+                test_cases.append(
+                    TestCase(
+                        name=f"test_{sig.name}_with_defaults",
+                        description=f"Test that {sig.name} works with default parameters",
+                        code=(
+                            f"def test_{sig.name}_with_defaults():\n"
+                            f'    """Test {sig.name} with default parameter values."""\n'
+                            f"    # Call with only required parameters\n"
+                            f"    result = {sig.name}()\n"
+                            f"    assert result is not None\n"
+                        ),
+                        target_function=sig.name,
+                        category="edge_case",
+                    )
+                )
 
         return test_cases
 

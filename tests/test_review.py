@@ -136,10 +136,7 @@ def undocumented_function(x):
 """
         analyzer = ASTAnalyzer()
         result = analyzer.analyze_python(source, "test.py")
-        doc_findings = [
-            f for f in result.findings
-            if "docstring" in f.title.lower()
-        ]
+        doc_findings = [f for f in result.findings if "docstring" in f.title.lower()]
         assert len(doc_findings) >= 1
 
     def test_analyze_long_function(self):
@@ -154,8 +151,7 @@ def undocumented_function(x):
         analyzer = ASTAnalyzer()
         result = analyzer.analyze_python(source, "test.py")
         complexity_findings = [
-            f for f in result.findings
-            if "long" in f.title.lower() or "too" in f.title.lower()
+            f for f in result.findings if "long" in f.title.lower() or "too" in f.title.lower()
         ]
         assert len(complexity_findings) >= 1
 
@@ -167,10 +163,7 @@ def many_params(a, b, c, d, e, f, g):
 """
         analyzer = ASTAnalyzer()
         result = analyzer.analyze_python(source, "test.py")
-        param_findings = [
-            f for f in result.findings
-            if "parameter" in f.title.lower()
-        ]
+        param_findings = [f for f in result.findings if "parameter" in f.title.lower()]
         assert len(param_findings) >= 1
 
     def test_analyze_empty_source(self):

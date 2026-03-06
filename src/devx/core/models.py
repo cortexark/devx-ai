@@ -241,22 +241,14 @@ class DeploymentRecord(BaseModel):
 class DORAMetrics(BaseModel):
     """DORA metrics snapshot for a team or repository."""
 
-    deployment_frequency: float = Field(
-        description="Deployments per day (averaged over window)"
-    )
-    lead_time_seconds: float = Field(
-        description="Median seconds from commit to production"
-    )
+    deployment_frequency: float = Field(description="Deployments per day (averaged over window)")
+    lead_time_seconds: float = Field(description="Median seconds from commit to production")
     change_failure_rate: float = Field(
         ge=0.0, le=1.0, description="Fraction of deployments causing failure"
     )
-    mttr_seconds: float = Field(
-        description="Mean time to recovery in seconds"
-    )
+    mttr_seconds: float = Field(description="Mean time to recovery in seconds")
     window_days: int = Field(default=30, description="Measurement window in days")
-    calculated_at: datetime = Field(
-        default_factory=lambda: datetime.now(tz=UTC)
-    )
+    calculated_at: datetime = Field(default_factory=lambda: datetime.now(tz=UTC))
 
     @property
     def deployment_frequency_rating(self) -> str:

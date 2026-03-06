@@ -89,10 +89,10 @@ class DORAAnalyzer:
         trends: dict[str, dict[str, Any]] = {}
 
         metrics_to_compare = [
-            ("deployment_frequency", True),     # Higher is better
-            ("lead_time_seconds", False),        # Lower is better
-            ("change_failure_rate", False),       # Lower is better
-            ("mttr_seconds", False),             # Lower is better
+            ("deployment_frequency", True),  # Higher is better
+            ("lead_time_seconds", False),  # Lower is better
+            ("change_failure_rate", False),  # Lower is better
+            ("mttr_seconds", False),  # Lower is better
         ]
 
         for metric_name, higher_is_better in metrics_to_compare:
@@ -152,10 +152,7 @@ class DORAAnalyzer:
         ]
 
         for metric_name in metric_names:
-            values = {
-                team: getattr(metrics, metric_name)
-                for team, metrics in team_metrics.items()
-            }
+            values = {team: getattr(metrics, metric_name) for team, metrics in team_metrics.items()}
 
             # Sort: higher is better for deploy freq, lower for everything else
             reverse = metric_name == "deployment_frequency"
@@ -211,9 +208,7 @@ class DORAAnalyzer:
             return 0.0
 
         total = len(deployments)
-        failures = sum(
-            1 for d in deployments if d.status in ("failure", "rollback")
-        )
+        failures = sum(1 for d in deployments if d.status in ("failure", "rollback"))
 
         return failures / total
 
@@ -235,9 +230,7 @@ class DORAAnalyzer:
                 created = incident.get("created_at")
                 resolved = incident.get("resolved_at")
                 if isinstance(created, datetime) and isinstance(resolved, datetime):
-                    recovery_times.append(
-                        (resolved - created).total_seconds()
-                    )
+                    recovery_times.append((resolved - created).total_seconds())
             if recovery_times:
                 return statistics.mean(recovery_times)
 
@@ -248,11 +241,9 @@ class DORAAnalyzer:
         for i, dep in enumerate(sorted_deps):
             if dep.status in ("failure", "rollback"):
                 # Find next successful deployment
-                for next_dep in sorted_deps[i + 1:]:
+                for next_dep in sorted_deps[i + 1 :]:
                     if next_dep.status == "success":
-                        recovery = (
-                            next_dep.deployed_at - dep.deployed_at
-                        ).total_seconds()
+                        recovery = (next_dep.deployed_at - dep.deployed_at).total_seconds()
                         recovery_times_est.append(recovery)
                         break
 

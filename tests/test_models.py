@@ -132,21 +132,30 @@ class TestReviewFinding:
 class TestDiffHunk:
     def test_added_lines(self):
         hunk = DiffHunk(
-            old_start=1, old_count=3, new_start=1, new_count=5,
+            old_start=1,
+            old_count=3,
+            new_start=1,
+            new_count=5,
             content="+line1\n line2\n-line3\n+line4\n+line5",
         )
         assert hunk.added_lines == ["line1", "line4", "line5"]
 
     def test_removed_lines(self):
         hunk = DiffHunk(
-            old_start=1, old_count=3, new_start=1, new_count=5,
+            old_start=1,
+            old_count=3,
+            new_start=1,
+            new_count=5,
             content="+line1\n line2\n-line3\n+line4\n-line5",
         )
         assert hunk.removed_lines == ["line3", "line5"]
 
     def test_empty_content(self):
         hunk = DiffHunk(
-            old_start=1, old_count=0, new_start=1, new_count=0,
+            old_start=1,
+            old_count=0,
+            new_start=1,
+            new_count=0,
             content="",
         )
         assert hunk.added_lines == []
@@ -175,10 +184,10 @@ class TestFileDiff:
         fd = FileDiff(
             new_path="test.py",
             hunks=[
-                DiffHunk(old_start=1, old_count=0, new_start=1, new_count=2,
-                         content="+line1\n+line2"),
-                DiffHunk(old_start=5, old_count=0, new_start=5, new_count=1,
-                         content="+line3"),
+                DiffHunk(
+                    old_start=1, old_count=0, new_start=1, new_count=2, content="+line1\n+line2"
+                ),
+                DiffHunk(old_start=5, old_count=0, new_start=5, new_count=1, content="+line3"),
             ],
         )
         assert fd.total_additions == 3
@@ -187,8 +196,9 @@ class TestFileDiff:
         fd = FileDiff(
             old_path="test.py",
             hunks=[
-                DiffHunk(old_start=1, old_count=2, new_start=1, new_count=0,
-                         content="-line1\n-line2"),
+                DiffHunk(
+                    old_start=1, old_count=2, new_start=1, new_count=0, content="-line1\n-line2"
+                ),
             ],
         )
         assert fd.total_deletions == 2

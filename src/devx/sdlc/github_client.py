@@ -146,9 +146,7 @@ class GitHubClient:
         )
         return response.text
 
-    async def get_pull_request_files(
-        self, repo: str, pr_number: int
-    ) -> list[dict[str, Any]]:
+    async def get_pull_request_files(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """List files changed in a pull request.
 
         Args:
@@ -158,9 +156,7 @@ class GitHubClient:
         Returns:
             List of file change objects.
         """
-        response = await self._request(
-            "GET", f"/repos/{repo}/pulls/{pr_number}/files"
-        )
+        response = await self._request("GET", f"/repos/{repo}/pulls/{pr_number}/files")
         return response.json()  # type: ignore[no-any-return]
 
     async def add_labels(
@@ -197,9 +193,7 @@ class GitHubClient:
         Returns:
             Issue data as a dictionary.
         """
-        response = await self._request(
-            "GET", f"/repos/{repo}/issues/{issue_number}"
-        )
+        response = await self._request("GET", f"/repos/{repo}/issues/{issue_number}")
         return response.json()  # type: ignore[no-any-return]
 
     async def list_issues(
@@ -224,9 +218,7 @@ class GitHubClient:
         params: dict[str, Any] = {"state": state, "per_page": min(per_page, 100)}
         if labels:
             params["labels"] = labels
-        response = await self._request(
-            "GET", f"/repos/{repo}/issues", params=params
-        )
+        response = await self._request("GET", f"/repos/{repo}/issues", params=params)
         return response.json()  # type: ignore[no-any-return]
 
     # -----------------------------------------------------------------------
@@ -257,9 +249,7 @@ class GitHubClient:
         )
         return response.json()  # type: ignore[no-any-return]
 
-    async def list_deployment_statuses(
-        self, repo: str, deployment_id: int
-    ) -> list[dict[str, Any]]:
+    async def list_deployment_statuses(self, repo: str, deployment_id: int) -> list[dict[str, Any]]:
         """List statuses for a deployment.
 
         Args:
@@ -269,9 +259,7 @@ class GitHubClient:
         Returns:
             List of deployment status objects.
         """
-        response = await self._request(
-            "GET", f"/repos/{repo}/deployments/{deployment_id}/statuses"
-        )
+        response = await self._request("GET", f"/repos/{repo}/deployments/{deployment_id}/statuses")
         return response.json()  # type: ignore[no-any-return]
 
     # -----------------------------------------------------------------------
@@ -311,4 +299,5 @@ class GitHubClient:
     def _current_timestamp() -> int:
         """Get current Unix timestamp."""
         import time
+
         return int(time.time())

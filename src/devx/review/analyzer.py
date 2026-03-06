@@ -128,7 +128,7 @@ class ASTAnalyzer:
                 class_info = self._extract_class_info(node, source)
                 result.classes.append(class_info)
             elif node.type in ("import_statement", "import_from_statement"):
-                result.imports.append(source[node.start_byte:node.end_byte])
+                result.imports.append(source[node.start_byte : node.end_byte])
 
         result.findings = self._generate_findings(result, file_path)
         return result
@@ -175,18 +175,25 @@ class ASTAnalyzer:
 
         for child in node.children:
             if child.type == "identifier":
-                name = source[child.start_byte:child.end_byte]
+                name = source[child.start_byte : child.end_byte]
             elif child.type == "parameters":
                 # Count parameters excluding 'self' and 'cls'
                 params = [
-                    c for c in child.children
-                    if c.type in ("identifier", "typed_parameter", "default_parameter",
-                                  "typed_default_parameter", "list_splat_pattern",
-                                  "dictionary_splat_pattern")
+                    c
+                    for c in child.children
+                    if c.type
+                    in (
+                        "identifier",
+                        "typed_parameter",
+                        "default_parameter",
+                        "typed_default_parameter",
+                        "list_splat_pattern",
+                        "dictionary_splat_pattern",
+                    )
                 ]
                 param_names = []
                 for p in params:
-                    text = source[p.start_byte:p.end_byte]
+                    text = source[p.start_byte : p.end_byte]
                     param_name = text.split(":")[0].split("=")[0].strip().lstrip("*")
                     param_names.append(param_name)
                 param_count = len([p for p in param_names if p not in ("self", "cls")])
@@ -226,11 +233,11 @@ class ASTAnalyzer:
 
         for child in node.children:
             if child.type == "identifier":
-                name = source[child.start_byte:child.end_byte]
+                name = source[child.start_byte : child.end_byte]
             elif child.type == "argument_list":
                 for arg in child.children:
                     if arg.type in ("identifier", "attribute"):
-                        base_classes.append(source[arg.start_byte:arg.end_byte])
+                        base_classes.append(source[arg.start_byte : arg.end_byte])
             elif child.type == "block":
                 for stmt in child.children:
                     if stmt.type == "function_definition":
@@ -346,8 +353,7 @@ class ASTAnalyzer:
                     ReviewFinding(
                         title=f"Public function `{func.name}` lacks a docstring",
                         description=(
-                            "All public functions should have docstrings "
-                            "for discoverability."
+                            "All public functions should have docstrings for discoverability."
                         ),
                         severity=Severity.INFO,
                         category=Category.DOCUMENTATION,

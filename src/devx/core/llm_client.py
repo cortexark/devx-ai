@@ -117,11 +117,19 @@ class LLMClient:
 
         if self._config.provider == "openai":
             return await self._complete_openai(
-                prompt, system=system, temperature=temp, max_tokens=tokens, model=mdl,
+                prompt,
+                system=system,
+                temperature=temp,
+                max_tokens=tokens,
+                model=mdl,
             )
         if self._config.provider == "anthropic":
             return await self._complete_anthropic(
-                prompt, system=system, temperature=temp, max_tokens=tokens, model=mdl,
+                prompt,
+                system=system,
+                temperature=temp,
+                max_tokens=tokens,
+                model=mdl,
             )
 
         msg = f"Unsupported LLM provider: {self._config.provider}"

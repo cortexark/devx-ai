@@ -62,8 +62,11 @@ class SuggestionFormatter:
         # Group by severity
         by_severity = self._group_by_severity(result.findings)
         all_severities = (
-            Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM,
-            Severity.LOW, Severity.INFO,
+            Severity.CRITICAL,
+            Severity.HIGH,
+            Severity.MEDIUM,
+            Severity.LOW,
+            Severity.INFO,
         )
         for severity in all_severities:
             findings = by_severity.get(severity, [])
@@ -97,11 +100,13 @@ class SuggestionFormatter:
             if f.suggestion:
                 body_parts.append(f"\n**Suggestion:** {f.suggestion}")
 
-            comments.append({
-                "path": f.location.file,
-                "line": f.location.start_line,
-                "body": "\n".join(body_parts),
-            })
+            comments.append(
+                {
+                    "path": f.location.file,
+                    "line": f.location.start_line,
+                    "body": "\n".join(body_parts),
+                }
+            )
         return comments
 
     def to_json(self, result: ReviewResult) -> dict[str, object]:

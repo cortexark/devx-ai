@@ -154,8 +154,11 @@ class TestDORAAnalyzer:
         analyzer = DORAAnalyzer()
         deployments = [
             DeploymentRecord(
-                id="d1", repo="r", sha="a",
-                deployed_at=now, status="success",
+                id="d1",
+                repo="r",
+                sha="a",
+                deployed_at=now,
+                status="success",
                 lead_time_seconds=3600,
             )
         ]
@@ -170,9 +173,7 @@ class TestDORAAnalyzer:
             },
         ]
 
-        metrics = analyzer.calculate(
-            deployments, window_days=30, incidents=incidents
-        )
+        metrics = analyzer.calculate(deployments, window_days=30, incidents=incidents)
         # Each incident took 1 hour to resolve -> mean = 3600s
         assert metrics.mttr_seconds == 3600.0
 
@@ -249,13 +250,17 @@ class TestDashboardAPI:
         now = datetime.now(tz=UTC)
         store.add_deployment(
             DeploymentRecord(
-                id="dep-1", repo="org/app", sha="abc123",
+                id="dep-1",
+                repo="org/app",
+                sha="abc123",
                 deployed_at=now,
             )
         )
         store.add_deployment(
             DeploymentRecord(
-                id="dep-2", repo="org/other", sha="def456",
+                id="dep-2",
+                repo="org/other",
+                sha="def456",
                 deployed_at=now - timedelta(hours=1),
             )
         )
@@ -269,13 +274,17 @@ class TestDashboardAPI:
         now = datetime.now(tz=UTC)
         store.add_deployment(
             DeploymentRecord(
-                id="dep-1", repo="org/app", sha="abc",
+                id="dep-1",
+                repo="org/app",
+                sha="abc",
                 deployed_at=now,
             )
         )
         store.add_deployment(
             DeploymentRecord(
-                id="dep-2", repo="org/other", sha="def",
+                id="dep-2",
+                repo="org/other",
+                sha="def",
                 deployed_at=now,
             )
         )
@@ -311,7 +320,9 @@ class TestMetricsStore:
         store = MetricsStore()
         now = datetime.now(tz=UTC)
         dep = DeploymentRecord(
-            id="d1", repo="org/app", sha="abc",
+            id="d1",
+            repo="org/app",
+            sha="abc",
             deployed_at=now,
         )
         store.add_deployment(dep)
@@ -346,13 +357,17 @@ class TestMetricsStore:
         now = datetime.now(tz=UTC)
         store.add_deployment(
             DeploymentRecord(
-                id="old", repo="r", sha="a",
+                id="old",
+                repo="r",
+                sha="a",
                 deployed_at=now - timedelta(days=2),
             )
         )
         store.add_deployment(
             DeploymentRecord(
-                id="new", repo="r", sha="b",
+                id="new",
+                repo="r",
+                sha="b",
                 deployed_at=now,
             )
         )
