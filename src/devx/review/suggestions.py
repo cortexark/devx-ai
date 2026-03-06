@@ -104,7 +104,7 @@ class SuggestionFormatter:
             })
         return comments
 
-    def to_json(self, result: ReviewResult) -> dict:
+    def to_json(self, result: ReviewResult) -> dict[str, object]:
         """Serialize review result to a JSON-compatible dict.
 
         Returns:

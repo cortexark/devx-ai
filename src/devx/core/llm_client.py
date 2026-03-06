@@ -115,12 +115,14 @@ class LLMClient:
         tokens = max_tokens or self._config.max_tokens
         mdl = model or self._config.model
 
-        kwargs = dict(system=system, temperature=temp, max_tokens=tokens, model=mdl)
-
         if self._config.provider == "openai":
-            return await self._complete_openai(prompt, **kwargs)
+            return await self._complete_openai(
+                prompt, system=system, temperature=temp, max_tokens=tokens, model=mdl,
+            )
         if self._config.provider == "anthropic":
-            return await self._complete_anthropic(prompt, **kwargs)
+            return await self._complete_anthropic(
+                prompt, system=system, temperature=temp, max_tokens=tokens, model=mdl,
+            )
 
         msg = f"Unsupported LLM provider: {self._config.provider}"
         raise ValueError(msg)
