@@ -34,7 +34,7 @@ from devx.sdlc.labeler import PRLabeler
 from devx.sdlc.triage import IssueTriage
 from devx.testgen.extractor import SignatureExtractor
 from devx.testgen.generator import TestGenerator
-from devx.testgen.templates import TemplateRegistry
+from devx.testgen.templates import TestTemplateRegistry
 
 # ===========================================================================
 # Scenario 1: PR Code Review Pipeline
@@ -293,8 +293,8 @@ async def fetch_exchange_rate(currency: str, base: str = "USD") -> Optional[floa
 
     def test_template_registry_has_patterns(self) -> None:
         """Verify template registry provides test patterns."""
-        registry = TemplateRegistry()
-        templates = registry.list_templates()
+        registry = TestTemplateRegistry()
+        templates = registry.get_templates()
 
         # Should have basic test patterns
         assert len(templates) > 0
