@@ -210,7 +210,8 @@ class TestTemplateRegistry:
                 description="Test that function raises expected exception for invalid input",
                 template=(
                     "def test_{func_name}_raises_on_invalid_input():\n"
-                    '    """Test that {func_name} raises {expected_exception} for invalid input."""\n'
+                    '    """Test {func_name} raises'
+                    ' {expected_exception} for invalid input."""\n'
                     "    with pytest.raises({expected_exception}):\n"
                     "        {invalid_call}\n"
                 ),

@@ -7,9 +7,7 @@ models, config objects, and public class methods.
 
 from __future__ import annotations
 
-import json
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -40,18 +38,15 @@ from devx.metrics.dashboard import (
     DORAResponse,
     HealthResponse,
     MetricsStore,
-    TrendResponse,
 )
 from devx.review.agent import ReviewAgent
-from devx.review.analyzer import ASTAnalyzer, ASTAnalysisResult, ClassInfo, FunctionInfo
+from devx.review.analyzer import ASTAnalysisResult, ASTAnalyzer, ClassInfo, FunctionInfo
 from devx.review.diff_parser import DiffParser
 from devx.review.suggestions import SuggestionFormatter
 from devx.sdlc.labeler import PRLabeler
 from devx.sdlc.triage import IssueTriage
 from devx.testgen.extractor import SignatureExtractor
 from devx.testgen.generator import TestGenerator
-from devx.testgen.templates import TestTemplate, TestTemplateRegistry
-
 
 # ===========================================================================
 # 1. Config Model Contracts
@@ -959,7 +954,7 @@ class TestDORAAnalyzerContracts:
             mttr_seconds=1800,
         )
         result = analyzer.trend(m, m)
-        for metric_name, trend in result.items():
+        for _metric_name, trend in result.items():
             assert "value" in trend
             assert "previous" in trend
             assert "change_percent" in trend
@@ -996,7 +991,7 @@ class TestDORAAnalyzerContracts:
             ),
         }
         result = analyzer.team_comparison(teams)
-        for metric_name, data in result.items():
+        for _metric_name, data in result.items():
             assert "rankings" in data
             assert "average" in data
             assert "best_team" in data

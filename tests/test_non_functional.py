@@ -8,31 +8,22 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
-from pydantic import ValidationError
 
 from devx.core.config import GitHubConfig, LLMConfig, MetricsConfig, Settings
-from devx.core.llm_client import LLMClient, LLMResponse
+from devx.core.llm_client import LLMResponse
 from devx.core.models import (
-    Category,
-    CodeLocation,
     DeploymentRecord,
-    DiffHunk,
     DORAMetrics,
-    FileDiff,
-    FunctionSignature,
     IssuePriority,
     LabelClassification,
     PRLabel,
-    ReviewFinding,
     ReviewResult,
     Severity,
-    TestCase,
     TestSuite,
     TriageResult,
 )
@@ -42,14 +33,12 @@ from devx.metrics.dashboard import MetricsStore, app, get_store
 from devx.review.agent import ReviewAgent
 from devx.review.analyzer import ASTAnalyzer
 from devx.review.diff_parser import DiffParser
-from devx.review.suggestions import SuggestionFormatter
-from devx.sdlc.github_client import GitHubClient, RateLimitInfo
+from devx.sdlc.github_client import GitHubClient
 from devx.sdlc.labeler import PRLabeler
 from devx.sdlc.triage import IssueTriage
 from devx.testgen.extractor import SignatureExtractor
 from devx.testgen.generator import TestGenerator
 from devx.testgen.templates import TestTemplate, TestTemplateRegistry
-
 
 # ===========================================================================
 # 1. Error Handling: Invalid Diffs
@@ -144,7 +133,7 @@ class TestASTAnalyzerErrorHandling:
         # Deeply nested code that is still valid Python
         source = "def f():\n"
         for i in range(20):
-            source += "    " * (i + 1) + f"if True:\n"
+            source += "    " * (i + 1) + "if True:\n"
         source += "    " * 21 + "pass\n"
         analyzer = ASTAnalyzer()
         result = analyzer.analyze_python(source, "nested.py")
@@ -857,7 +846,7 @@ class TestPRLabelerHeuristicCoverage:
         assert result.confidence == 0.6
 
     async def test_single_signal_lower_confidence(self):
-        result = await PRLabeler().classify(
+        _result = await PRLabeler().classify(
             title="Implement new feature",
             changed_files=["src/totally_new.py"],
         )

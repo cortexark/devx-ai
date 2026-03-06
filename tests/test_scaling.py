@@ -9,8 +9,6 @@ from __future__ import annotations
 import time
 from datetime import UTC, datetime, timedelta
 
-import pytest
-
 from devx.core.models import (
     DeploymentRecord,
     DORAMetrics,
@@ -20,14 +18,12 @@ from devx.core.models import (
 )
 from devx.metrics.analyzer import DORAAnalyzer
 from devx.metrics.dashboard import MetricsStore
+from devx.review.agent import ReviewAgent
 from devx.review.analyzer import ASTAnalyzer
 from devx.review.diff_parser import DiffParser
-from devx.review.agent import ReviewAgent
-from devx.review.suggestions import SuggestionFormatter
 from devx.sdlc.labeler import PRLabeler
 from devx.testgen.extractor import SignatureExtractor
 from devx.testgen.generator import TestGenerator
-
 
 # ===========================================================================
 # 1. DiffParser with Very Large Diffs (1000+ lines)
@@ -43,10 +39,10 @@ class TestDiffParserScaling:
             "diff --git a/large_file.py b/large_file.py",
             "--- a/large_file.py",
             "+++ b/large_file.py",
-            "@@ -1,0 +1,{} @@".format(num_added_lines),
+            f"@@ -1,0 +1,{num_added_lines} @@",
         ]
         for i in range(num_added_lines):
-            lines.append("+    x_{} = {}  # added line {}".format(i, i, i))
+            lines.append(f"+    x_{i} = {i}  # added line {i}")
         return "\n".join(lines)
 
     def test_parse_1000_line_diff(self):
@@ -72,19 +68,19 @@ class TestDiffParserScaling:
         assert len(result) == 1
         assert result[0].total_additions == 10000
         # Should complete within 5 seconds
-        assert elapsed < 5.0, "Parsing 10k-line diff took {:.2f}s".format(elapsed)
+        assert elapsed < 5.0, f"Parsing 10k-line diff took {elapsed:.2f}s"
 
     def test_many_files_in_diff(self):
         """Diff with 100 files."""
         parser = DiffParser()
         parts = []
         for i in range(100):
-            parts.append("diff --git a/file_{}.py b/file_{}.py".format(i, i))
-            parts.append("--- a/file_{}.py".format(i))
-            parts.append("+++ b/file_{}.py".format(i))
+            parts.append(f"diff --git a/file_{i}.py b/file_{i}.py")
+            parts.append(f"--- a/file_{i}.py")
+            parts.append(f"+++ b/file_{i}.py")
             parts.append("@@ -1,1 +1,2 @@")
             parts.append(" existing line")
-            parts.append("+new line in file {}".format(i))
+            parts.append(f"+new line in file {i}")
         diff = "\n".join(parts)
         result = parser.parse(diff)
         assert len(result) == 100
@@ -99,10 +95,10 @@ class TestDiffParserScaling:
         ]
         for i in range(50):
             start = i * 20 + 1
-            parts.append("@@ -{},3 +{},4 @@".format(start, start))
-            parts.append(" context_line_{}".format(i))
-            parts.append("+added_line_{}".format(i))
-            parts.append(" another_context_{}".format(i))
+            parts.append(f"@@ -{start},3 +{start},4 @@")
+            parts.append(f" context_line_{i}")
+            parts.append(f"+added_line_{i}")
+            parts.append(f" another_context_{i}")
         diff = "\n".join(parts)
         result = parser.parse(diff)
         assert len(result) == 1
@@ -118,7 +114,7 @@ class TestDiffParserScaling:
             "@@ -1,500 +1,501 @@",
         ]
         for i in range(500):
-            parts.append(" context_line_{}".format(i))
+            parts.append(f" context_line_{i}")
         parts.append("+added_line")
         diff = "\n".join(parts)
         result = parser.parse(diff)
@@ -139,9 +135,7 @@ class TestASTAnalyzerScaling:
         lines = ['"""Large module."""\n']
         for i in range(num_functions):
             lines.append(
-                "def function_{}(x: int) -> int:\n"
-                '    """Function {}."""\n'
-                "    return x + {}\n\n".format(i, i, i)
+                f'def function_{i}(x: int) -> int:\n    """Function {i}."""\n    return x + {i}\n\n'
             )
         return "\n".join(lines)
 
@@ -165,18 +159,18 @@ class TestASTAnalyzerScaling:
         elapsed = time.monotonic() - start
         assert len(result.functions) >= 500
         # Should complete within 5 seconds
-        assert elapsed < 5.0, "Analyzing 500 functions took {:.2f}s".format(elapsed)
+        assert elapsed < 5.0, f"Analyzing 500 functions took {elapsed:.2f}s"
 
     def test_large_file_with_classes(self):
         """Module with 50 classes, each with 5 methods."""
         lines = ['"""Module with many classes."""\n']
         for i in range(50):
-            lines.append("class Class_{}:".format(i))
-            lines.append('    """Class {}."""'.format(i))
+            lines.append(f"class Class_{i}:")
+            lines.append(f'    """Class {i}."""')
             for j in range(5):
-                lines.append("    def method_{}(self):".format(j))
-                lines.append('        """Method {}."""'.format(j))
-                lines.append("        return {}".format(j))
+                lines.append(f"    def method_{j}(self):")
+                lines.append(f'        """Method {j}."""')
+                lines.append(f"        return {j}")
             lines.append("")
         source = "\n".join(lines)
         analyzer = ASTAnalyzer()
@@ -187,9 +181,9 @@ class TestASTAnalyzerScaling:
         """Functions that each have 10+ parameters."""
         lines = ['"""Module with complex signatures."""\n']
         for i in range(50):
-            params = ", ".join("p{}: int = {}".format(j, j) for j in range(10))
-            lines.append("def complex_func_{}({}):".format(i, params))
-            lines.append('    """Complex function {}."""'.format(i))
+            params = ", ".join(f"p{j}: int = {j}" for j in range(10))
+            lines.append(f"def complex_func_{i}({params}):")
+            lines.append(f'    """Complex function {i}."""')
             lines.append("    return p0 + p1")
             lines.append("")
         source = "\n".join(lines)
@@ -204,8 +198,8 @@ class TestASTAnalyzerScaling:
         """Functions with deeply nested control flow."""
         lines = ['"""Deeply nested module."""\n']
         for i in range(20):
-            lines.append("def nested_func_{}():".format(i))
-            lines.append('    """Nested function {}."""'.format(i))
+            lines.append(f"def nested_func_{i}():")
+            lines.append(f'    """Nested function {i}."""')
             indent = "    "
             for d in range(8):
                 lines.append("{}{}if True:".format(indent, "    " * d))
@@ -220,10 +214,10 @@ class TestASTAnalyzerScaling:
         """Multiple long functions should all be detected."""
         lines = ['"""Module with long functions."""\n']
         for i in range(10):
-            lines.append("def long_func_{}():".format(i))
-            lines.append('    """Long function {}."""'.format(i))
+            lines.append(f"def long_func_{i}():")
+            lines.append(f'    """Long function {i}."""')
             for j in range(60):
-                lines.append("    x_{} = {}".format(j, j))
+                lines.append(f"    x_{j} = {j}")
             lines.append("    return x_0")
             lines.append("")
         source = "\n".join(lines)
@@ -252,9 +246,9 @@ class TestDORAAnalyzerScaling:
             status = "failure" if (i % failure_interval == 0) else "success"
             deployments.append(
                 DeploymentRecord(
-                    id="dep-{}".format(i),
+                    id=f"dep-{i}",
                     repo="org/app",
-                    sha="sha{:04x}".format(i),
+                    sha=f"sha{i:04x}",
                     deployed_at=now - timedelta(hours=i),
                     status=status,
                     lead_time_seconds=3600 + (i * 10),
@@ -285,16 +279,16 @@ class TestDORAAnalyzerScaling:
         elapsed = time.monotonic() - start
         assert isinstance(metrics, DORAMetrics)
         # Should complete within 5 seconds
-        assert elapsed < 5.0, "Calculating DORA for 10k deploys took {:.2f}s".format(elapsed)
+        assert elapsed < 5.0, f"Calculating DORA for 10k deploys took {elapsed:.2f}s"
 
     def test_all_failures(self):
         """All deployments are failures."""
         now = datetime.now(tz=UTC)
         deployments = [
             DeploymentRecord(
-                id="d{}".format(i),
+                id=f"d{i}",
                 repo="r",
-                sha="s{}".format(i),
+                sha=f"s{i}",
                 deployed_at=now - timedelta(hours=i),
                 status="failure",
                 lead_time_seconds=3600,
@@ -311,9 +305,9 @@ class TestDORAAnalyzerScaling:
         now = datetime.now(tz=UTC)
         deployments = [
             DeploymentRecord(
-                id="d{}".format(i),
+                id=f"d{i}",
                 repo="r",
-                sha="s{}".format(i),
+                sha=f"s{i}",
                 deployed_at=now - timedelta(hours=i),
                 status="success",
                 lead_time_seconds=3600,
@@ -330,9 +324,9 @@ class TestDORAAnalyzerScaling:
         now = datetime.now(tz=UTC)
         deployments = [
             DeploymentRecord(
-                id="d{}".format(i),
+                id=f"d{i}",
                 repo="r",
-                sha="s{}".format(i),
+                sha=f"s{i}",
                 deployed_at=now - timedelta(hours=i),
                 status="success",
                 lead_time_seconds=None,
@@ -348,9 +342,9 @@ class TestDORAAnalyzerScaling:
         now = datetime.now(tz=UTC)
         deployments = [
             DeploymentRecord(
-                id="d{}".format(i),
+                id=f"d{i}",
                 repo="r",
-                sha="s{}".format(i),
+                sha=f"s{i}",
                 deployed_at=now - timedelta(hours=i),
                 status="success",
                 lead_time_seconds=3600 if i % 2 == 0 else None,
@@ -406,7 +400,7 @@ class TestDORAAnalyzerScaling:
         analyzer = DORAAnalyzer()
         teams = {}
         for i in range(20):
-            teams["team_{}".format(i)] = DORAMetrics(
+            teams[f"team_{i}"] = DORAMetrics(
                 deployment_frequency=float(i + 1),
                 lead_time_seconds=float(3600 * (21 - i)),
                 change_failure_rate=round(i * 0.04, 2),
@@ -427,7 +421,7 @@ class TestPRLabelerScaling:
 
     async def test_100_changed_files(self):
         labeler = PRLabeler()
-        files = ["src/module_{}/handler.py".format(i) for i in range(100)]
+        files = [f"src/module_{i}/handler.py" for i in range(100)]
         result = await labeler.classify(
             title="Fix authentication bug",
             changed_files=files,
@@ -437,7 +431,7 @@ class TestPRLabelerScaling:
 
     async def test_500_changed_files(self):
         labeler = PRLabeler()
-        files = ["src/component_{}.py".format(i) for i in range(500)]
+        files = [f"src/component_{i}.py" for i in range(500)]
         result = await labeler.classify(
             title="Refactor entire codebase",
             changed_files=files,
@@ -448,9 +442,9 @@ class TestPRLabelerScaling:
         """Many files of different types should produce multiple labels."""
         labeler = PRLabeler()
         files = (
-            ["tests/test_{}.py".format(i) for i in range(50)]
-            + ["docs/page_{}.md".format(i) for i in range(50)]
-            + ["src/module_{}.py".format(i) for i in range(50)]
+            [f"tests/test_{i}.py" for i in range(50)]
+            + [f"docs/page_{i}.md" for i in range(50)]
+            + [f"src/module_{i}.py" for i in range(50)]
             + ["Dockerfile", "Makefile", "pyproject.toml"]
         )
         result = await labeler.classify(
@@ -465,7 +459,7 @@ class TestPRLabelerScaling:
 
     async def test_performance_with_many_files(self):
         labeler = PRLabeler()
-        files = ["path/to/deep/nested/file_{}.py".format(i) for i in range(1000)]
+        files = [f"path/to/deep/nested/file_{i}.py" for i in range(1000)]
         start = time.monotonic()
         result = await labeler.classify(
             title="Fix bug",
@@ -474,7 +468,7 @@ class TestPRLabelerScaling:
         elapsed = time.monotonic() - start
         assert isinstance(result, LabelClassification)
         # Should complete within 1 second
-        assert elapsed < 1.0, "Classifying 1000 files took {:.2f}s".format(elapsed)
+        assert elapsed < 1.0, f"Classifying 1000 files took {elapsed:.2f}s"
 
 
 # ===========================================================================
@@ -488,8 +482,8 @@ class TestSignatureExtractorScaling:
     def test_extract_from_100_functions(self):
         lines = []
         for i in range(100):
-            lines.append("def func_{}(x: int, y: str = 'default') -> bool:".format(i))
-            lines.append('    """Function {}."""'.format(i))
+            lines.append(f"def func_{i}(x: int, y: str = 'default') -> bool:")
+            lines.append(f'    """Function {i}."""')
             lines.append("    return True")
             lines.append("")
         source = "\n".join(lines)
@@ -500,8 +494,8 @@ class TestSignatureExtractorScaling:
     def test_extract_from_500_functions_performance(self):
         lines = []
         for i in range(500):
-            lines.append("def func_{}(a: int, b: float, c: str) -> dict:".format(i))
-            lines.append('    """Function {}."""'.format(i))
+            lines.append(f"def func_{i}(a: int, b: float, c: str) -> dict:")
+            lines.append(f'    """Function {i}."""')
             lines.append("    return {}")
             lines.append("")
         source = "\n".join(lines)
@@ -511,7 +505,7 @@ class TestSignatureExtractorScaling:
         elapsed = time.monotonic() - start
         assert len(sigs) == 500
         # Should complete within 10 seconds (CI runners may be slow)
-        assert elapsed < 10.0, "Extracting 500 signatures took {:.2f}s".format(elapsed)
+        assert elapsed < 10.0, f"Extracting 500 signatures took {elapsed:.2f}s"
 
 
 # ===========================================================================
@@ -525,9 +519,9 @@ class TestTestGeneratorScaling:
     async def test_generate_for_50_functions(self):
         lines = []
         for i in range(50):
-            lines.append("def func_{}(x: int) -> int:".format(i))
-            lines.append('    """Function {}."""'.format(i))
-            lines.append("    return x + {}".format(i))
+            lines.append(f"def func_{i}(x: int) -> int:")
+            lines.append(f'    """Function {i}."""')
+            lines.append(f"    return x + {i}")
             lines.append("")
         source = "\n".join(lines)
         gen = TestGenerator()
@@ -538,8 +532,8 @@ class TestTestGeneratorScaling:
     async def test_generate_for_100_functions_performance(self):
         lines = []
         for i in range(100):
-            lines.append("def func_{}(x: int, y: str = 'test') -> bool:".format(i))
-            lines.append('    """Function {}."""'.format(i))
+            lines.append(f"def func_{i}(x: int, y: str = 'test') -> bool:")
+            lines.append(f'    """Function {i}."""')
             lines.append("    return True")
             lines.append("")
         source = "\n".join(lines)
@@ -549,7 +543,7 @@ class TestTestGeneratorScaling:
         elapsed = time.monotonic() - start
         assert len(suite.test_cases) >= 100
         # Should complete within 3 seconds
-        assert elapsed < 3.0, "Generating tests for 100 functions took {:.2f}s".format(elapsed)
+        assert elapsed < 3.0, f"Generating tests for 100 functions took {elapsed:.2f}s"
 
 
 # ===========================================================================
@@ -566,9 +560,9 @@ class TestMetricsStoreScaling:
         for i in range(1000):
             store.add_deployment(
                 DeploymentRecord(
-                    id="d{}".format(i),
+                    id=f"d{i}",
                     repo="org/app",
-                    sha="s{}".format(i),
+                    sha=f"s{i}",
                     deployed_at=now - timedelta(minutes=i),
                 )
             )
@@ -603,9 +597,9 @@ class TestMetricsStoreScaling:
             offset = (i * 7) % 500  # pseudo-random ordering
             store.add_deployment(
                 DeploymentRecord(
-                    id="d{}".format(i),
+                    id=f"d{i}",
                     repo="org/app",
-                    sha="s{}".format(i),
+                    sha=f"s{i}",
                     deployed_at=now - timedelta(minutes=offset),
                 )
             )
@@ -638,9 +632,9 @@ class TestReviewAgentScaling:
             "@@ -0,0 +1,500 @@",
         ]
         for i in range(500):
-            lines.append("+def func_{}():".format(i))
-            lines.append('+    """Function {}."""'.format(i))
-            lines.append("+    return {}".format(i))
+            lines.append(f"+def func_{i}():")
+            lines.append(f'+    """Function {i}."""')
+            lines.append(f"+    return {i}")
             lines.append("+")
         diff = "\n".join(lines)
 
@@ -652,20 +646,20 @@ class TestReviewAgentScaling:
         assert isinstance(result, ReviewResult)
         assert result.files_analyzed >= 1
         # Should complete within 5 seconds
-        assert elapsed < 5.0, "Reviewing large diff took {:.2f}s".format(elapsed)
+        assert elapsed < 5.0, f"Reviewing large diff took {elapsed:.2f}s"
 
     async def test_review_many_files_diff(self):
         """Review a diff spanning 50 Python files."""
         parts = []
         for i in range(50):
-            parts.append("diff --git a/mod_{}.py b/mod_{}.py".format(i, i))
+            parts.append(f"diff --git a/mod_{i}.py b/mod_{i}.py")
             parts.append("new file mode 100644")
             parts.append("--- /dev/null")
-            parts.append("+++ b/mod_{}.py".format(i))
+            parts.append(f"+++ b/mod_{i}.py")
             parts.append("@@ -0,0 +1,5 @@")
-            parts.append("+def func_{}():".format(i))
-            parts.append('+    """Function {}."""'.format(i))
-            parts.append("+    return {}".format(i))
+            parts.append(f"+def func_{i}():")
+            parts.append(f'+    """Function {i}."""')
+            parts.append(f"+    return {i}")
             parts.append("+")
         diff = "\n".join(parts)
 
