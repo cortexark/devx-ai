@@ -106,9 +106,10 @@ index abc1234..def5678 100644
             if line.startswith("+") and not line.startswith("+++")
         )
 
-        findings = analyzer.analyze_python(added_code, filename="src/auth.py")
+        ast_result = analyzer.analyze_python(added_code, file_path="src/auth.py")
 
         # Should detect issues (missing docstrings, etc.)
+        findings = ast_result.findings
         assert isinstance(findings, list)
         for finding in findings:
             assert isinstance(finding, ReviewFinding)
@@ -425,9 +426,10 @@ class TestIssueTriagePipeline:
         triage = IssueTriage()
 
         result = await triage.triage(
-            title="SQL injection vulnerability in login endpoint",
+            title="Security vulnerability: SQL injection in login endpoint",
             description=(
-                "The login form is vulnerable to SQL injection. Attacker can bypass authentication."
+                "The login form has a security vulnerability allowing SQL injection. "
+                "Attacker can bypass authentication causing data loss."
             ),
         )
 
